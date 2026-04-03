@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Confidentiality Challenge</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#003366;--navy-mid:#1a4f8a;--navy-light:#dbeafe;--navy-pale:#f0f6ff;
+  --purple:#4c1d95;--purple-mid:#6d28d9;--purple-light:#ede9fe;--purple-pale:#f5f3ff;
+  --red:#b91c1c;--red-light:#fef2f2;--red-bd:#fca5a5;
+  --green:#15803d;--green-light:#f0fdf4;--green-bd:#86efac;
+  --amber:#92400e;--amber-light:#fffbeb;--amber-bd:#fcd34d;
+  --gold-bright:#f0b429;
+  --text:#1e293b;--muted:#64748b;--border:#e2e8f0;--bg:#f1f5f9;--surface:#fff;
+  --r:10px;--rl:16px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:1.5rem 1rem 3rem}
+.wrap{max-width:680px;margin:0 auto}
+.screen{display:none}.screen.active{display:block}
+
+.top-bar{background:linear-gradient(135deg,var(--navy) 0%,var(--purple) 100%);color:#fff;border-radius:var(--rl);padding:1.25rem 1.5rem;margin-bottom:1.25rem;text-align:center;position:relative;overflow:hidden}
+.top-bar::before{content:'🔒  🛡  🔒';position:absolute;top:8px;left:0;right:0;text-align:center;font-size:11px;opacity:.2;letter-spacing:10px}
+.top-bar h1{font-size:18px;font-weight:800;position:relative}
+.top-bar p{font-size:11px;opacity:.7;margin-top:3px;text-transform:uppercase;letter-spacing:.08em;position:relative}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:1.5rem;margin-bottom:1.25rem}
+
+.start-emoji{font-size:56px;text-align:center;margin-bottom:.75rem}
+.start-title{font-size:21px;font-weight:800;color:var(--navy);text-align:center;margin-bottom:.5rem}
+.start-sub{font-size:14px;color:var(--muted);text-align:center;line-height:1.7;margin-bottom:1.25rem}
+
+.law-box{background:var(--purple-pale);border:1.5px solid var(--purple-light);border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:1.25rem;font-size:13px;line-height:1.75;color:var(--text)}
+.law-box strong{color:var(--purple-mid)}
+.law-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--purple-mid);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+
+.scenario-box{background:var(--navy-pale);border:1px solid var(--navy-light);border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:1.25rem;font-size:14px;line-height:1.75}
+.scenario-box strong{color:var(--navy)}
+
+.rules-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.5rem}
+.rule-item{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:.85rem .75rem;text-align:center}
+.rule-icon{font-size:22px;margin-bottom:4px}
+.rule-val{font-size:12px;font-weight:700;color:var(--navy)}
+.rule-lbl{font-size:11px;color:var(--muted);margin-top:1px}
+
+.name-lbl{font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px}
+input[type=text]{width:100%;padding:10px 14px;font-size:15px;border:1.5px solid var(--border);border-radius:var(--r);font-family:inherit;color:var(--text);background:var(--bg);margin-bottom:14px;transition:border-color .15s}
+input[type=text]:focus{outline:none;border-color:var(--purple-mid)}
+
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;font-size:14px;font-weight:700;border-radius:var(--r);border:none;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-navy{background:var(--navy);color:#fff}.btn-navy:hover{background:var(--navy-mid)}
+.btn-purple{background:var(--purple);color:#fff}.btn-purple:hover{background:var(--purple-mid)}
+.btn-outline{background:var(--surface);color:var(--navy);border:1.5px solid var(--navy)}.btn-outline:hover{background:var(--navy-pale)}
+.btn-row{display:flex;gap:10px}.btn-row .btn{flex:1}
+
+.hud{background:var(--surface);border:1px solid var(--border);border-radius:var(--rl);padding:1rem 1.25rem;margin-bottom:1rem}
+.hud-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.hud-patron{display:flex;align-items:center;gap:10px}
+.patron-emoji{font-size:38px;transition:all .4s}
+.patron-info strong{font-size:14px;color:var(--navy);display:block}
+.patron-info span{font-size:12px;color:var(--muted)}
+.hud-stats{display:flex;gap:8px}
+.stat-pill{font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;background:var(--navy-pale);color:var(--navy)}
+.meter-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.meter-label{font-size:12px;font-weight:700;color:var(--muted)}
+.meter-pct-lbl{font-size:12px;font-weight:700;color:var(--green)}
+.meter-track{background:var(--border);border-radius:20px;height:10px;overflow:hidden}
+.meter-fill{height:10px;border-radius:20px;transition:width .5s,background .5s;background:var(--green)}
+.meter-fill.med{background:#f59e0b}
+.meter-fill.low{background:var(--red)}
+
+.round-progress{display:flex;gap:6px;margin-bottom:1rem}
+.rp-dot{flex:1;height:5px;border-radius:20px;background:var(--border);transition:background .3s}
+.rp-dot.correct{background:var(--green)}
+.rp-dot.breach{background:var(--red)}
+.rp-dot.current{background:var(--purple-mid);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+.chat-area{background:linear-gradient(180deg,#f5f3ff 0%,var(--navy-pale) 100%);border:1px solid var(--navy-light);border-radius:var(--rl);padding:1rem;margin-bottom:1rem;min-height:110px;display:flex;flex-direction:column;gap:10px}
+.bubble-patron{max-width:82%;padding:10px 14px;border-radius:14px;border-bottom-left-radius:4px;font-size:14px;line-height:1.55;background:linear-gradient(135deg,#4c1d95,#6d28d9);color:#fff;align-self:flex-start}
+.bubble-you{max-width:82%;padding:10px 14px;border-radius:14px;border-bottom-right-radius:4px;font-size:14px;line-height:1.55;background:var(--navy-pale);border:1px solid var(--navy-light);color:var(--text);align-self:flex-end}
+.bubble-system{padding:8px 14px;border-radius:10px;font-size:12px;font-style:italic;background:var(--surface);border:1px solid var(--border);color:var(--muted);align-self:center;text-align:center}
+.bubble-name{font-size:10px;font-weight:700;opacity:.65;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em}
+
+.choices-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.choices-label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.trap-warning{font-size:11px;color:var(--amber);font-weight:600;background:var(--amber-light);border:1px solid var(--amber-bd);padding:3px 9px;border-radius:20px}
+
+.choices{display:flex;flex-direction:column;gap:8px;margin-bottom:1rem}
+.choice{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--r);cursor:pointer;transition:all .15s;background:var(--surface);text-align:left;font-family:inherit;width:100%}
+.choice:hover:not(:disabled){border-color:var(--purple-mid);background:var(--purple-pale)}
+.choice:disabled{cursor:default}
+.choice-letter{width:26px;height:26px;border-radius:50%;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--purple-light);color:var(--purple-mid);transition:all .15s}
+.choice-text{font-size:13px;color:var(--text);line-height:1.45;padding-top:2px}
+.choice.res-correct{border-color:var(--green-bd);background:var(--green-light)}
+.choice.res-correct .choice-letter{background:var(--green);color:#fff}
+.choice.res-correct .choice-text{color:var(--green);font-weight:600}
+.choice.res-breach{border-color:var(--red-bd);background:var(--red-light)}
+.choice.res-breach .choice-letter{background:var(--red);color:#fff}
+.choice.res-breach .choice-text{color:var(--red);font-weight:600}
+.choice.res-dim{opacity:.4}
+.trap-badge{display:inline-block;font-size:10px;font-weight:700;background:var(--amber-light);color:var(--amber);border:1px solid var(--amber-bd);padding:1px 7px;border-radius:20px;margin-left:6px;vertical-align:middle}
+
+.fb-box{border-radius:var(--r);padding:13px 16px;font-size:13px;line-height:1.7;display:none;margin-bottom:1rem}
+.fb-box.show{display:block}
+.fb-correct{background:var(--green-light);border:1px solid var(--green-bd);color:#14532d}
+.fb-breach{background:var(--red-light);border:1px solid var(--red-bd);color:#7f1d1d}
+.fb-box strong{display:block;margin-bottom:4px;font-size:14px}
+.law-cite{display:inline-block;font-size:11px;font-weight:700;background:var(--purple-light);color:var(--purple-mid);padding:2px 8px;border-radius:20px;margin-top:6px}
+
+.badge-wrap{background:linear-gradient(135deg,var(--navy) 0%,var(--purple) 100%);border-radius:var(--rl);padding:2rem 1.5rem;text-align:center;margin-bottom:1.25rem;position:relative;overflow:hidden}
+.badge-wrap::before{content:'🔒  🛡  🔒';position:absolute;top:12px;left:0;right:0;text-align:center;font-size:13px;opacity:.2;letter-spacing:14px}
+.badge-icon{font-size:54px;margin-bottom:.5rem;position:relative}
+.badge-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.6);margin-bottom:.25rem}
+.badge-name{font-size:21px;font-weight:800;color:var(--gold-bright);margin-bottom:.25rem}
+.badge-sub{font-size:13px;color:rgba(255,255,255,.7)}
+
+.end-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.5rem}
+.es-item{background:var(--navy-pale);border-radius:var(--r);padding:.9rem .5rem;text-align:center}
+.es-val{font-size:22px;font-weight:800;color:var(--navy)}
+.es-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+
+.cert{background:var(--surface);border:3px solid var(--purple-mid);border-radius:var(--rl);padding:2rem 1.5rem;text-align:center;margin-bottom:1rem;position:relative;overflow:hidden}
+.cert-corner{position:absolute;width:100px;height:100px;border-radius:50%;background:var(--purple-pale);opacity:.6}
+.cert-corner.tl{top:-30px;left:-30px}.cert-corner.tr{top:-30px;right:-30px}
+.cert-corner.bl{bottom:-30px;left:-30px}.cert-corner.br{bottom:-30px;right:-30px}
+.cert>*:not(.cert-corner){position:relative}
+.cert-logo{font-size:36px;margin-bottom:.25rem}
+.cert-inst{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:.75rem}
+.cert-presents{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.cert-award{font-size:16px;font-weight:800;color:var(--purple);text-transform:uppercase;letter-spacing:.06em;margin:.3rem 0 .75rem}
+.cert-to{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.2rem}
+.cert-name{font-size:28px;font-weight:900;color:var(--navy);font-style:italic;margin-bottom:.75rem}
+.cert-divider{border:none;border-top:1.5px solid var(--purple-light);margin:.75rem 0}
+.cert-body{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:1rem}
+.cert-pill{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,var(--navy),var(--purple));color:#fff;font-size:13px;font-weight:700;padding:8px 20px;border-radius:30px;margin-bottom:.75rem}
+.cert-score-tag{font-size:12px;color:var(--purple-mid);font-weight:600;background:var(--purple-pale);border:1px solid var(--purple-light);border-radius:20px;padding:3px 12px;display:inline-block}
+.cert-footer{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;margin-top:1rem}
+.cert-sig-name{font-size:13px;font-weight:700;color:var(--navy)}
+.cert-sig-role{font-size:11px;color:var(--muted)}
+.cert-date{font-size:12px;color:var(--muted);text-align:right}
+
+.breach-box{background:var(--red-light);border:2px solid var(--red-bd);border-radius:var(--rl);padding:1.75rem 1.5rem;text-align:center;margin-bottom:1.25rem}
+.breach-icon{font-size:56px;margin-bottom:.75rem}
+.breach-title{font-size:21px;font-weight:800;color:var(--red);margin-bottom:.5rem}
+.breach-sub{font-size:14px;color:#7f1d1d;line-height:1.7;margin-bottom:1rem}
+.breach-rule{background:#fff;border:1px solid var(--red-bd);border-radius:var(--r);padding:10px 14px;font-size:13px;color:var(--red);font-weight:600}
+
+@media print{
+  body{background:#fff;padding:0}
+  .wrap{max-width:100%}
+  .screen:not(#screen-win){display:none!important}
+  .badge-wrap,.end-stats,.btn-row{display:none!important}
+  .cert{border:3px solid #6d28d9;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media(max-width:480px){body{padding:1rem .75rem 2rem}.card{padding:1.1rem}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top-bar">
+    <h1>🔒 Confidentiality Challenge</h1>
+    <p>Privacy &amp; Ethics Training · University Library</p>
+  </div>
+
+  <!-- START -->
+  <div class="screen active" id="screen-start">
+    <div class="card">
+      <div class="start-emoji">😰</div>
+      <div class="start-title">Meet "Desperate David"</div>
+      <div class="start-sub">David is stressed about an exam. Can you protect patron privacy while still being helpful — even when the wrong answers sound kind?</div>
+
+      <div class="law-box">
+        <div class="law-title">⚖️ Legal Framework You Must Follow</div>
+        <strong>FERPA</strong> (Family Educational Rights &amp; Privacy Act) and the <strong>ALA Privacy Policy</strong> strictly prohibit disclosing patron checkout records to any third party — including friends, family, or other students — regardless of the reason or urgency stated.
+      </div>
+
+      <div class="scenario-box">
+        📅 <strong>Situation:</strong> It's exam week. David rushes to the desk and says:<br><br>
+        <em>"I know my friend Sarah checked out the textbook I need for tomorrow's exam. Can you just confirm it's her? I'll run to her dorm and borrow it. It's an emergency!"</em><br><br>
+        📋 <strong>Your job:</strong> Help David — without ever disclosing Sarah's checkout information.
+      </div>
+
+      <div class="rules-grid">
+        <div class="rule-item"><div class="rule-icon">🎭</div><div class="rule-val">5 Rounds</div><div class="rule-lbl">of dialogue</div></div>
+        <div class="rule-item"><div class="rule-icon">🛡</div><div class="rule-val">3 Shields</div><div class="rule-lbl">protect privacy</div></div>
+        <div class="rule-item"><div class="rule-icon">⚠️</div><div class="rule-val">Tricky!</div><div class="rule-lbl">wrong = sounds kind</div></div>
+      </div>
+
+      <label class="name-lbl" for="player-name">Your Name (for the certificate)</label>
+      <input type="text" id="player-name" placeholder="e.g. Jamie Lee" maxlength="60"/>
+      <button class="btn btn-purple" onclick="startGame()">🔒 Accept the Privacy Challenge →</button>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div class="screen" id="screen-game">
+    <div class="hud">
+      <div class="hud-top">
+        <div class="hud-patron">
+          <div class="patron-emoji" id="patron-emoji">😰</div>
+          <div class="patron-info">
+            <strong>Desperate David</strong>
+            <span id="patron-mood">Mood: Stressed</span>
+          </div>
+        </div>
+        <div class="hud-stats">
+          <div class="stat-pill">Round <span id="round-num">1</span>/5</div>
+          <div class="stat-pill">🛡 <span id="shields-num">3</span></div>
+        </div>
+      </div>
+      <div>
+        <div class="meter-header">
+          <div class="meter-label">🔒 Privacy Integrity</div>
+          <div class="meter-pct-lbl" id="meter-pct-lbl">100%</div>
+        </div>
+        <div class="meter-track"><div class="meter-fill" id="meter-fill" style="width:100%"></div></div>
+      </div>
+    </div>
+
+    <div class="round-progress" id="round-progress"></div>
+    <div class="chat-area" id="chat-area"></div>
+
+    <div class="choices-header">
+      <div class="choices-label">Choose your response</div>
+      <div class="trap-warning">⚠ Watch for traps!</div>
+    </div>
+    <div class="choices" id="choices"></div>
+    <div class="fb-box" id="fb-box"></div>
+    <button class="btn btn-purple" id="next-btn" style="display:none" onclick="nextRound()">Continue →</button>
+  </div>
+
+  <!-- WIN -->
+  <div class="screen" id="screen-win">
+    <div class="badge-wrap">
+      <div class="badge-icon">🛡</div>
+      <div class="badge-title">Privacy Achievement Unlocked</div>
+      <div class="badge-name">Certified Privacy Guardian</div>
+      <div class="badge-sub">Confidentiality Challenge · University Library</div>
+    </div>
+    <div class="card">
+      <div style="text-align:center;margin-bottom:1.25rem">
+        <div style="font-size:48px;margin-bottom:.5rem">🎉</div>
+        <div style="font-size:21px;font-weight:800;color:var(--navy);margin-bottom:.4rem">Outstanding, <span id="win-name"></span>!</div>
+        <div style="font-size:14px;color:var(--muted);line-height:1.65" id="win-sub"></div>
+      </div>
+      <div class="end-stats">
+        <div class="es-item"><div class="es-val" id="win-correct"></div><div class="es-lbl">Correct</div></div>
+        <div class="es-item"><div class="es-val" id="win-breaches"></div><div class="es-lbl">Breaches</div></div>
+        <div class="es-item"><div class="es-val" id="win-score"></div><div class="es-lbl">Score</div></div>
+      </div>
+      <div class="cert">
+        <div class="cert-corner tl"></div><div class="cert-corner tr"></div>
+        <div class="cert-corner bl"></div><div class="cert-corner br"></div>
+        <div class="cert-logo">🔒</div>
+        <div class="cert-inst">University Library Services · Privacy Division</div>
+        <div class="cert-presents">Proudly Certifies That</div>
+        <div class="cert-award">🛡 Certified Privacy Guardian</div>
+        <div class="cert-to">Awarded to</div>
+        <div class="cert-name" id="cert-name-out"></div>
+        <div class="cert-divider"></div>
+        <div class="cert-body">In recognition of successfully protecting patron confidentiality under pressure,<br>demonstrating mastery of FERPA compliance, ALA Privacy Policy,<br>and ethical library service standards.</div>
+        <div class="cert-pill">🔒 Privacy Integrity Verified</div><br>
+        <div class="cert-score-tag" id="cert-score-out"></div>
+        <div class="cert-footer">
+          <div><div class="cert-sig-name">Library Coordinator</div><div class="cert-sig-role">University Library Services</div></div>
+          <div class="cert-date" id="cert-date-out"></div>
+        </div>
+      </div>
+      <div class="btn-row" style="margin-top:.75rem">
+        <button class="btn btn-outline" onclick="restartGame()">↺ Play Again</button>
+        <button class="btn btn-navy" onclick="window.print()">🖨 Print Certificate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BREACH -->
+  <div class="screen" id="screen-breach">
+    <div class="breach-box">
+      <div class="breach-icon">🚨</div>
+      <div class="breach-title">Privacy Breach — Legal Training Required</div>
+      <div class="breach-sub">You disclosed patron information in a way that violates library confidentiality policy and federal law. In a real situation, this could expose you and the institution to serious legal liability.</div>
+      <div class="breach-rule">⚖️ FERPA &amp; ALA Policy: Patron checkout records are strictly confidential. No information may be disclosed to any third party without a court order.</div>
+    </div>
+    <div class="card">
+      <p style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:8px">📖 What went wrong?</p>
+      <div id="breach-review" style="font-size:13px;color:var(--muted);line-height:1.75;margin-bottom:1.25rem"></div>
+      <p style="font-size:13px;font-weight:600;color:var(--purple-mid);margin-bottom:10px">✅ The Golden Rule:</p>
+      <div style="background:var(--purple-pale);border:1px solid var(--purple-light);border-radius:var(--r);padding:12px 14px;font-size:13px;line-height:1.7;color:var(--text);margin-bottom:1.25rem">
+        Never confirm, deny, or hint at who has checked out any library item. Instead offer: <strong>a hold, an e-book, another copy, or the subject librarian.</strong>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="restartGame()">↺ Try Again</button>
+        <button class="btn btn-purple" onclick="showScreen('screen-start')">← Back to Start</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+var ROUNDS = [
+  {
+    says: "Please — I just need you to confirm Sarah Chen checked out 'Organic Chemistry' by McMurry. My exam is TOMORROW. Just say yes or no, that's all I'm asking!",
+    emoji: '😰', mood: 'Stressed',
+    choices: [
+      { l:'A', text:"I can't give you her number, but I can tell you — yes, it looks like Sarah does have it checked out. Go find her!", type:'breach', trap:true,
+        fb:"<strong>🚨 Privacy Breach — The Friendly Trap.</strong> Confirming that Sarah has the book is a direct violation of patron confidentiality. Even a simple \"yes\" is illegal under FERPA — you just disclosed her checkout record to a third party." },
+      { l:'B', text:"I understand you're stressed, but I'm not able to disclose who has any item checked out. I can place a rush hold so you get it the moment it's returned — and let me check if there's a digital version available.", type:'correct', trap:false,
+        fb:"<strong>✅ Perfect Response.</strong> You acknowledged David's stress, held the privacy line clearly, and immediately offered two constructive alternatives. This is exactly what 'helpful but compliant' looks like." },
+      { l:'C', text:"Oh, if Sarah is your friend, maybe you can just text her directly? She might not mind. I'll let you know the due date so you can time it.", type:'breach', trap:true,
+        fb:"<strong>🚨 Privacy Breach — The 'Helpful Nudge' Trap.</strong> Suggesting he contact Sarah implies you confirmed she has the book. Sharing the due date is an outright disclosure of her checkout record." }
+    ]
+  },
+  {
+    says: "Come on. We're in the same study group — Sarah would WANT me to have it. She'd tell you herself if she were here. You're making this harder than it needs to be.",
+    emoji: '😤', mood: 'Pushy',
+    choices: [
+      { l:'A', text:"Well, if she's in your study group and you're sure she'd be okay with it — I suppose I could leave a note on her account to call you.", type:'breach', trap:true,
+        fb:"<strong>🚨 Privacy Breach — The 'She'd Approve' Trap.</strong> What a third party thinks another patron would permit is irrelevant. Only Sarah can authorize any action on her account." },
+      { l:'B', text:"I hear you — this sounds really urgent. I genuinely can't share account information, but I can contact the Interlibrary Loan office to rush-request a copy from another campus library. That might arrive by tomorrow morning.", type:'correct', trap:false,
+        fb:"<strong>✅ Excellent.</strong> You validated the urgency, held the boundary, and offered a creative genuinely useful alternative. You also avoided the 'she'd want it' manipulation." },
+      { l:'C', text:"You know what, let me just check if the item is on the shelf. If it's not there, then you'd know it's checked out — that wouldn't technically be me telling you.", type:'breach', trap:true,
+        fb:"<strong>🚨 Privacy Breach — The 'Technically Not Me' Trap.</strong> Deliberately engineering a situation where the patron can infer checkout information is still a privacy violation. Intent matters in ethics." }
+    ]
+  },
+  {
+    says: "Okay fine. I won't ask about Sarah. Can you just tell me — is the book checked out right now? And when is it due back?",
+    emoji: '🤨', mood: 'Strategic',
+    choices: [
+      { l:'A', text:"That much I can tell you — yes, it's checked out, and it's due back this Friday.", type:'breach', trap:true,
+        fb:"<strong>🚨 Privacy Breach — The 'Reframed Question' Trap.</strong> Providing the due date gives scheduling information David will use to locate Sarah. Due dates are part of the confidential patron record." },
+      { l:'B', text:"You can check item availability yourself in the online catalog anytime. What I can't share is anything related to who has it or when it's due. I can set up an automatic email notification for when it's available.", type:'correct', trap:false,
+        fb:"<strong>✅ Smart and precise.</strong> You correctly distinguished between public catalog data (availability — fine to reference) and confidential checkout details (who has it, due date). The auto-notification is the ideal solution." },
+      { l:'C', text:"It's due back soon — I can't say exactly when, but you probably don't have long to wait. Check back tomorrow.", type:'breach', trap:true,
+        fb:"<strong>🚨 Privacy Breach — The 'Vague Hint' Trap.</strong> Even vague hints about the due date constitute disclosure. Any statement giving a time-based inference is a violation, regardless of how imprecise." }
+    ]
+  },
+  {
+    says: "This is unbelievable. I'm going to fail my exam because of a stupid rule. I'm reporting you to the Dean of Students. You're ruining my academic career.",
+    emoji: '🥺', mood: 'Manipulative',
+    choices: [
+      { l:'A', text:"I really don't want you to fail — let me see what I can do. Maybe I can quietly check if it's Sarah's account and confirm without it being official...", type:'breach', trap:true,
+        fb:"<strong>🚨 Privacy Breach — The Guilt &amp; Threat Trap.</strong> A threat of being reported triggered capitulation. 'Quietly checking' is still a full privacy violation. The method of disclosure (official vs. quiet) does not change the legal reality." },
+      { l:'B', text:"I understand this is incredibly stressful, and I'm sorry for your situation. Our privacy policy protects every student — including you. I can't make exceptions, but I've placed the hold and I'm happy to contact our subject librarian right now to find alternatives.", type:'correct', trap:false,
+        fb:"<strong>✅ Textbook de-escalation under pressure.</strong> You expressed genuine empathy, reframed the policy as something that protects him too, and held the line confidently. You didn't apologize for the policy — only for his difficult situation." },
+      { l:'C', text:"Please don't report me — I really need this job. I'll check the system just this once, but please don't ask again.", type:'breach', trap:true,
+        fb:"<strong>🚨 Privacy Breach — The Self-Preservation Trap.</strong> Prioritizing job security over compliance is wrong. When a patron uses threats to coerce disclosure, escalate to a supervisor — never comply." }
+    ]
+  },
+  {
+    says: "Fine. You win. Can you at least tell me — is there ANY way I can get this book tonight?",
+    emoji: '😔', mood: 'Deflated',
+    choices: [
+      { l:'A', text:"Honestly, between us? The fastest way is probably to find Sarah. I can't help you officially, but... you know what I mean.", type:'breach', trap:true,
+        fb:"<strong>🚨 Privacy Breach — The 'Off the Record' Trap.</strong> There is no such thing as 'off the record' in library privacy. An informal suggestion implying Sarah has the book is just as much a violation as an official one." },
+      { l:'B', text:"Yes — here are your real options: I've placed a rush hold on this copy. I found an e-book version in our database available right now. I can request an emergency ILL copy. And our subject librarian is on call until 9 PM tonight.", type:'correct', trap:false,
+        fb:"<strong>✅ The perfect closing.</strong> You turned defeat into genuine service — four real, constructive solutions while maintaining full privacy integrity through all five rounds. This is world-class patron service." },
+      { l:'C', text:"The only official thing I can do is the hold. But honestly, just ask around your class — someone's bound to know who has it.", type:'breach', trap:true,
+        fb:"<strong>🚨 Privacy Breach — The 'Ask Around' Trap.</strong> Advising David to 'ask around' to identify who has the book encourages a privacy investigation by proxy — undermining the same confidentiality you're meant to uphold." }
+    ]
+  }
+];
+
+var round = 0;
+var breaches = 0;
+var corrects = 0;
+var playerName = '';
+var breachLog = [];
+var MAX_BREACHES = 3;
+
+function startGame() {
+  var n = document.getElementById('player-name').value.trim();
+  if (!n) {
+    document.getElementById('player-name').style.borderColor = '#b91c1c';
+    document.getElementById('player-name').focus();
+    return;
+  }
+  document.getElementById('player-name').style.borderColor = '';
+  playerName = n;
+  round = 0; breaches = 0; corrects = 0; breachLog = [];
+  showScreen('screen-game');
+  buildDots();
+  renderRound();
+}
+
+function buildDots() {
+  var rp = document.getElementById('round-progress');
+  rp.innerHTML = '';
+  for (var i = 0; i < ROUNDS.length; i++) {
+    var d = document.createElement('div');
+    d.className = 'rp-dot' + (i === 0 ? ' current' : '');
+    d.id = 'dot-' + i;
+    rp.appendChild(d);
+  }
+}
+
+function renderRound() {
+  var r = ROUNDS[round];
+  document.getElementById('round-num').textContent = round + 1;
+  document.getElementById('shields-num').textContent = MAX_BREACHES - breaches;
+  document.getElementById('patron-emoji').textContent = r.emoji;
+  document.getElementById('patron-mood').textContent = 'Mood: ' + r.mood;
+
+  var chat = document.getElementById('chat-area');
+  chat.innerHTML = '';
+
+  if (round === 0) {
+    var sys = document.createElement('div');
+    sys.className = 'bubble-system';
+    sys.textContent = 'Exam week · David rushes to the circulation desk';
+    chat.appendChild(sys);
+  }
+
+  var bub = document.createElement('div');
+  bub.className = 'bubble-patron';
+  var bn = document.createElement('div');
+  bn.className = 'bubble-name';
+  bn.textContent = 'DESPERATE DAVID';
+  bub.appendChild(bn);
+  bub.appendChild(document.createTextNode(r.says));
+  chat.appendChild(bub);
+
+  var ch = document.getElementById('choices');
+  ch.innerHTML = '';
+  for (var i = 0; i < r.choices.length; i++) {
+    (function(idx) {
+      var c = r.choices[idx];
+      var btn = document.createElement('button');
+      btn.className = 'choice';
+      var trap = c.trap ? '<span class="trap-badge">Sounds helpful?</span>' : '';
+      btn.innerHTML = '<div class="choice-letter">' + c.l + '</div><div class="choice-text">' + c.text + trap + '</div>';
+      btn.onclick = function() { pick(idx, btn); };
+      ch.appendChild(btn);
+    })(i);
+  }
+
+  var fb = document.getElementById('fb-box');
+  fb.className = 'fb-box';
+  fb.innerHTML = '';
+  document.getElementById('next-btn').style.display = 'none';
+}
+
+function pick(idx, el) {
+  var r = ROUNDS[round];
+  var c = r.choices[idx];
+  var all = document.querySelectorAll('.choice');
+  for (var i = 0; i < all.length; i++) { all[i].disabled = true; }
+
+  var ok = c.type === 'correct';
+  if (ok) {
+    corrects++;
+    el.classList.add('res-correct');
+    updateDot(round, 'correct');
+  } else {
+    breaches++;
+    el.classList.add('res-breach');
+    breachLog.push({ round: round + 1, chose: c.text });
+    updateDot(round, 'breach');
+    updateMeter();
+  }
+
+  for (var j = 0; j < all.length; j++) {
+    if (all[j] !== el) all[j].classList.add('res-dim');
+  }
+
+  var chat = document.getElementById('chat-area');
+  var you = document.createElement('div');
+  you.className = 'bubble-you';
+  var yn = document.createElement('div');
+  yn.className = 'bubble-name';
+  yn.style.color = 'var(--navy)';
+  yn.textContent = 'YOU';
+  you.appendChild(yn);
+  you.appendChild(document.createTextNode(c.text));
+  chat.appendChild(you);
+  chat.scrollTop = chat.scrollHeight;
+
+  var fb = document.getElementById('fb-box');
+  fb.className = 'fb-box show ' + (ok ? 'fb-correct' : 'fb-breach');
+  var cite = ok ? 'FERPA Compliant · ALA Policy Upheld' : 'FERPA Violation · ALA Policy Breach';
+  fb.innerHTML = c.fb + '<br><span class="law-cite">' + cite + '</span>';
+
+  if (breaches >= MAX_BREACHES) {
+    setTimeout(function() { showBreach(); }, 1200);
+    return;
+  }
+
+  var nb = document.getElementById('next-btn');
+  nb.style.display = 'flex';
+  nb.textContent = round === ROUNDS.length - 1 ? 'View Results →' : 'Next Scenario →';
+}
+
+function updateDot(i, type) {
+  var d = document.getElementById('dot-' + i);
+  if (d) { d.classList.remove('current'); d.classList.add(type); }
+}
+
+function updateMeter() {
+  var pct = Math.max(0, Math.round((1 - breaches / MAX_BREACHES) * 100));
+  document.getElementById('meter-fill').style.width = pct + '%';
+  document.getElementById('meter-pct-lbl').textContent = pct + '%';
+  var fill = document.getElementById('meter-fill');
+  fill.className = 'meter-fill' + (pct > 60 ? '' : pct > 30 ? ' med' : ' low');
+  document.getElementById('shields-num').textContent = MAX_BREACHES - breaches;
+}
+
+function nextRound() {
+  round++;
+  if (round >= ROUNDS.length) {
+    showWin();
+    return;
+  }
+  var nextDot = document.getElementById('dot-' + round);
+  if (nextDot) { nextDot.classList.remove('current'); nextDot.classList.add('current'); }
+  renderRound();
+}
+
+function showWin() {
+  showScreen('screen-win');
+  var score = Math.round(corrects / ROUNDS.length * 100);
+  document.getElementById('win-name').textContent = playerName;
+  document.getElementById('win-correct').textContent = corrects;
+  document.getElementById('win-breaches').textContent = breaches;
+  document.getElementById('win-score').textContent = score + '%';
+  document.getElementById('win-sub').textContent = corrects === ROUNDS.length
+    ? "Flawless! You protected patron privacy through every scenario without a single breach. You're ready for the real desk."
+    : "You maintained privacy integrity through " + corrects + " of 5 scenarios. " + breaches + " lapse" + (breaches !== 1 ? 's were' : ' was') + " recorded — review the feedback to master the remaining edge cases.";
+  var now = new Date();
+  var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cert-name-out').textContent = playerName;
+  document.getElementById('cert-date-out').textContent = 'Issued: ' + months[now.getMonth()] + ' ' + now.getDate() + ', ' + now.getFullYear();
+  document.getElementById('cert-score-out').textContent = 'Final Score: ' + score + '%  (' + corrects + '/' + ROUNDS.length + ' correct)';
+}
+
+function showBreach() {
+  showScreen('screen-breach');
+  var html = 'You committed <strong>' + breaches + ' privacy breach' + (breaches !== 1 ? 'es' : '') + '</strong> during this simulation:<ul style="margin:10px 0 0 16px;display:flex;flex-direction:column;gap:6px">';
+  for (var i = 0; i < breachLog.length; i++) {
+    html += '<li>Round ' + breachLog[i].round + ': <em>"' + breachLog[i].chose.substring(0, 80) + '..."</em></li>';
+  }
+  html += '</ul>';
+  document.getElementById('breach-review').innerHTML = html;
+}
+
+function restartGame() {
+  round = 0; breaches = 0; corrects = 0; breachLog = [];
+  updateMeter();
+  showScreen('screen-game');
+  buildDots();
+  renderRound();
+}
+
+function showScreen(id) {
+  var screens = document.querySelectorAll('.screen');
+  for (var i = 0; i < screens.length; i++) { screens[i].classList.remove('active'); }
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
